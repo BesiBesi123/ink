@@ -1,0 +1,108 @@
+name: build llama.cpp (ink)
+
+# Upstream llama.cpp at llama/LLAMA_COMMIT + llama/patches/*.diff, Windows x64, CUDA 12.4.
+# Output: llama-ink-win-cuda12.4-x64.zip (server, cli, bench + ggml dlls) and cudart-win-cuda12.4-x64.zip.
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ["llama-*"]
+
+permissions:
+  contents: write
+
+jobs:
+  windows-cuda:
+    runs-on: windows-2022
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get llama.cpp at the pinned commit and apply ink's patches
+        shell: pwsh
+        run: |
+          $commit = (Get-Content llama/LLAMA_COMMIT).Trim()
+          git init llama.cpp
+          cd llama.cpp
+          git remote add origin https://github.com/ggml-org/llama.cpp.git
+          git fetch --depth 1 origin $commit
+          git checkout FETCH_HEAD
+          foreach ($p in Get-ChildItem ../llama/patches/*.diff | Sort-Object Name) {
+            git apply --check $p.FullName
+            git apply $p.FullName
+            Write-Host "applied $($p.Name)"
+          }
+
+      - name: Install CUDA toolkit 12.4 (same as upstream releases)
+        shell: pwsh
+        run: |
+          $root = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.4"
+          New-Item -ItemType Directory -Force $root | Out-Null
+          $base = "https://developer.download.nvidia.com/compute/cuda/redist"
+          $pkgs = @(
+            "cuda_cudart/windows-x86_64/cuda_cudart-windows-x86_64-12.4.127-archive.zip",
+            "cuda_nvcc/windows-x86_64/cuda_nvcc-windows-x86_64-12.4.131-archive.zip",
+            "cuda_nvrtc/windows-x86_64/cuda_nvrtc-windows-x86_64-12.4.127-archive.zip",
+            "libcublas/windows-x86_64/libcublas-windows-x86_64-12.4.5.8-archive.zip",
+            "cuda_nvtx/windows-x86_64/cuda_nvtx-windows-x86_64-12.4.127-archive.zip",
+            "cuda_profiler_api/windows-x86_64/cuda_profiler_api-windows-x86_64-12.4.127-archive.zip",
+            "visual_studio_integration/windows-x86_64/visual_studio_integration-windows-x86_64-12.4.127-archive.zip",
+            "cuda_cccl/windows-x86_64/cuda_cccl-windows-x86_64-12.4.127-archive.zip",
+            "cuda_nvml_dev/windows-x86_64/cuda_nvml_dev-windows-x86_64-12.4.127-archive.zip"
+          )
+          foreach ($p in $pkgs) {
+            $zip = Split-Path $p -Leaf
+            curl.exe -sSfL -o $zip "$base/$p"
+            7z x $zip -o"tmpcuda" -y | Out-Null
+            $dir = Join-Path "tmpcuda" ($zip -replace '\.zip$','')
+            Copy-Item "$dir\*" $root -Recurse -Force
+          }
+          "$root\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          "CUDA_PATH=$root" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "CUDA_PATH_V12_4=$root" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Install Ninja
+        run: choco install ninja -y
+
+      - name: Build
+        shell: cmd
+        working-directory: llama.cpp
+        run: |
+          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x64
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release ^
+            -DGGML_NATIVE=OFF -DGGML_CUDA=ON -DGGML_CUDA_CCCL_VERSION=v3.4.3 ^
+            -DCMAKE_CUDA_ARCHITECTURES="75-virtual;80-virtual;86-real;89-real" ^
+            -DLLAMA_BUILD_TESTS=OFF -DLLAMA_BUILD_EXAMPLES=OFF -DLLAMA_BUILD_BORINGSSL=ON
+          if errorlevel 1 exit /b 1
+          set /A NINJA_JOBS=%NUMBER_OF_PROCESSORS%
+          cmake --build build --config Release -j %NINJA_JOBS% --target llama-server llama-cli llama-bench
+          if errorlevel 1 exit /b 1
+
+      - name: Pack
+        shell: pwsh
+        run: |
+          $commit = (Get-Content llama/LLAMA_COMMIT).Trim()
+          New-Item -ItemType Directory -Force out | Out-Null
+          Copy-Item llama.cpp/build/bin/*.exe, llama.cpp/build/bin/*.dll out/
+          "llama.cpp $commit + ink patches: $((Get-ChildItem llama/patches/*.diff).Name -join ', ')" | Out-File out/BUILD.txt
+          Copy-Item llama.cpp/LICENSE out/LICENSE-llama.cpp
+          7z a llama-ink-win-cuda12.4-x64.zip .\out\*
+          New-Item -ItemType Directory -Force cudart | Out-Null
+          Copy-Item "$env:CUDA_PATH\bin\cudart64_*.dll", "$env:CUDA_PATH\bin\cublas64_*.dll", "$env:CUDA_PATH\bin\cublasLt64_*.dll" cudart/
+          7z a cudart-win-cuda12.4-x64.zip .\cudart\*
+          Get-ChildItem *.zip | Format-Table Name, Length
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: llama-ink-win-cuda12.4-x64
+          path: |
+            llama-ink-win-cuda12.4-x64.zip
+            cudart-win-cuda12.4-x64.zip
+
+      - name: Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            llama-ink-win-cuda12.4-x64.zip
+            cudart-win-cuda12.4-x64.zip
