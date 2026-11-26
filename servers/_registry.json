@@ -1,0 +1,274 @@
+[
+  {
+    "server": "browser",
+    "tool": "open",
+    "path": "servers/browser/open.py",
+    "import": "from servers.browser.open import open",
+    "description": "Go to url and return {url, title, text}.",
+    "keywords": [
+      "open",
+      "url",
+      "return",
+      "title",
+      "text"
+    ],
+    "required": [
+      "url"
+    ]
+  },
+  {
+    "server": "browser",
+    "tool": "click",
+    "path": "servers/browser/click.py",
+    "import": "from servers.browser.click import click",
+    "description": "Click a button/link/element (CSS selector or its visible text); returns the page afterwards.",
+    "keywords": [
+      "click",
+      "button",
+      "link",
+      "element",
+      "css",
+      "selector",
+      "its",
+      "visible",
+      "text",
+      "returns",
+      "page",
+      "afterwards"
+    ],
+    "required": [
+      "target"
+    ]
+  },
+  {
+    "server": "browser",
+    "tool": "fill",
+    "path": "servers/browser/fill.py",
+    "import": "from servers.browser.fill import fill",
+    "description": "Type text into an input (CSS selector, label, placeholder or text); submit=True presses Enter.",
+    "keywords": [
+      "fill",
+      "type",
+      "text",
+      "into",
+      "input",
+      "css",
+      "selector",
+      "label",
+      "placeholder",
+      "submit",
+      "true",
+      "presses",
+      "enter"
+    ],
+    "required": [
+      "target",
+      "text"
+    ]
+  },
+  {
+    "server": "browser",
+    "tool": "read",
+    "path": "servers/browser/read.py",
+    "import": "from servers.browser.read import read",
+    "description": "Readable text of the current page, or of one element.",
+    "keywords": [
+      "read",
+      "readable",
+      "text",
+      "current",
+      "page",
+      "one",
+      "element"
+    ],
+    "required": []
+  },
+  {
+    "server": "browser",
+    "tool": "links",
+    "path": "servers/browser/links.py",
+    "import": "from servers.browser.links import links",
+    "description": "Links on the page as [{text, href}], optionally only those whose text or href contains `contains`.",
+    "keywords": [
+      "links",
+      "page",
+      "text",
+      "href",
+      "optionally",
+      "only",
+      "those",
+      "whose",
+      "contains"
+    ],
+    "required": []
+  },
+  {
+    "server": "browser",
+    "tool": "screenshot",
+    "path": "servers/browser/screenshot.py",
+    "import": "from servers.browser.screenshot import screenshot",
+    "description": "Save a PNG of the page (path relative to the project).",
+    "keywords": [
+      "screenshot",
+      "save",
+      "png",
+      "page",
+      "path",
+      "relative",
+      "project"
+    ],
+    "required": []
+  },
+  {
+    "server": "browser",
+    "tool": "run_js",
+    "path": "servers/browser/run_js.py",
+    "import": "from servers.browser.run_js import run_js",
+    "description": "Evaluate a JavaScript expression or function in the page and return its (JSON) result.",
+    "keywords": [
+      "run",
+      "evaluate",
+      "javascript",
+      "expression",
+      "function",
+      "page",
+      "return",
+      "its",
+      "json",
+      "result"
+    ],
+    "required": [
+      "script"
+    ]
+  },
+  {
+    "server": "browser",
+    "tool": "back",
+    "path": "servers/browser/back.py",
+    "import": "from servers.browser.back import back",
+    "description": "Go back one page; returns the page afterwards.",
+    "keywords": [
+      "back",
+      "one",
+      "page",
+      "returns",
+      "afterwards"
+    ],
+    "required": []
+  },
+  {
+    "server": "local",
+    "tool": "list_files",
+    "path": "servers/local/list_files.py",
+    "import": "from servers.local.list_files import list_files",
+    "description": "List project files matching a glob, skipping VCS/cache/venv dirs.",
+    "keywords": [
+      "list",
+      "files",
+      "project",
+      "matching",
+      "glob",
+      "skipping",
+      "vcs",
+      "cache",
+      "venv",
+      "dirs"
+    ],
+    "required": []
+  },
+  {
+    "server": "local",
+    "tool": "file_info",
+    "path": "servers/local/file_info.py",
+    "import": "from servers.local.file_info import file_info",
+    "description": "Return byte size and line count for each given project-relative path.",
+    "keywords": [
+      "file",
+      "info",
+      "return",
+      "byte",
+      "size",
+      "line",
+      "count",
+      "given",
+      "project",
+      "relative",
+      "path"
+    ],
+    "required": [
+      "paths"
+    ]
+  },
+  {
+    "server": "local",
+    "tool": "grep_text",
+    "path": "servers/local/grep_text.py",
+    "import": "from servers.local.grep_text import grep_text",
+    "description": "Regex search project text files; returns path, line number and matching line.",
+    "keywords": [
+      "grep",
+      "text",
+      "regex",
+      "search",
+      "project",
+      "files",
+      "returns",
+      "path",
+      "line",
+      "number",
+      "matching"
+    ],
+    "required": [
+      "pattern"
+    ]
+  },
+  {
+    "server": "web",
+    "tool": "web_search",
+    "path": "servers/web/web_search.py",
+    "import": "from servers.web.web_search import web_search",
+    "description": "Search the web (Bing, DuckDuckGo fallback). Returns up to `limit` results with title, url and snippet.",
+    "keywords": [
+      "web",
+      "search",
+      "bing",
+      "duckduckgo",
+      "fallback",
+      "returns",
+      "limit",
+      "results",
+      "title",
+      "url",
+      "snippet"
+    ],
+    "required": [
+      "query"
+    ]
+  },
+  {
+    "server": "web",
+    "tool": "fetch_url",
+    "path": "servers/web/fetch_url.py",
+    "import": "from servers.web.fetch_url import fetch_url",
+    "description": "Download a web page and return its title and readable text (tags, scripts and styles removed).",
+    "keywords": [
+      "fetch",
+      "url",
+      "download",
+      "web",
+      "page",
+      "return",
+      "its",
+      "title",
+      "readable",
+      "text",
+      "tags",
+      "scripts",
+      "styles",
+      "removed"
+    ],
+    "required": [
+      "url"
+    ]
+  }
+]

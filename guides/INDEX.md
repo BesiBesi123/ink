@@ -1,0 +1,14 @@
+- game-design.md: Read when designing, tuning or reviewing a game mechanic, progression, difficulty, onboarding or "game feel" (juice, feedback, timing numbers).
+- game-architecture.md: Read when structuring or debugging JS/three.js game code: game loop, state machines, entities, events, RNG, save/load, tests with node --test, three.js performance and GPU memory leaks.
+- solidity-security.md: Read when writing, reviewing or testing Solidity contracts (tokens, staking, presale, DEX, game/NFT contracts) or Hardhat tests - security checklist with bug/fix code.
+- web3-frontend.md: Read when building or fixing a dapp frontend with wagmi/viem/tanstack query (wallet connect, chain switching, contract reads/writes, tx status, approvals, BigInt amounts, errors).
+- game-economy.md: Read when designing or tuning a game/token economy: currencies, faucets and sinks, emissions, staking APR, rewards, prices, anti-bot design, economy simulations, onchain vs offchain state.
+- real-money-games.md: Read when building anything where players bet or win value (casino/card/dice games, PvP stakes, cash mode): integer money math, provably fair RNG (commit/reveal HMAC), server authority, privacy, complete rules, house-edge simulation.
+- typescript.md: Read when creating or editing TypeScript (Vite/vitest/tsx/Node): typecheck-as-you-go loop, pitfalls that compile but are wrong (numeric enum Object.values, pop vs shift, float money), test values computed by code.
+- engineering-standard.md: Read for the full quality bar (definition of done) any code is held to: correctness, design, types, errors, security, performance, UX, tests, delivery.
+- new-project.md: Read when starting a project/game/app from scratch or a big feature: SPEC.md, architecture, vertical-slice milestones, professional scaffold.
+- stack.md: Read when choosing technologies, libraries or versions: modern defaults for apps, browser games, realtime servers, EVM dapps; how to check latest versions.
+- frontend-ui.md: Read when building or restyling UI/HUD/menus: design tokens, all states, responsive, motion, accessibility, performance.
+- backend-api.md: Read when building servers/APIs/websockets/auth/databases/ledgers: authority, validation, SIWE, realtime rooms, transactions.
+- testing.md: Read when writing tests or a test strategy: unit, property (fast-check), integration, protocol, Playwright e2e, contract fuzz, simulations.
+- delivery.md: Read when finishing a milestone or preparing to share/deploy: README, .env.example, scripts, CI, git hygiene, deploy configs.

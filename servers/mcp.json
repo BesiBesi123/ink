@@ -1,0 +1,22 @@
+{
+  "mcpServers": {
+    "local": {
+      "type": "stdio",
+      "command": "python",
+      "args": ["servers/local_server/server.py"],
+      "cwd": "."
+    },
+    "web": {
+      "type": "stdio",
+      "command": "python",
+      "args": ["servers/web_server/server.py"],
+      "cwd": "."
+    },
+    "browser": {
+      "type": "stdio",
+      "command": "python",
+      "args": ["servers/browser_server/server.py"],
+      "cwd": "."
+    }
+  }
+}

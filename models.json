@@ -1,0 +1,19 @@
+{
+  "_comment": "Models install.ps1 downloads into ~/.ink/models. role: fast = Ornith (default, coding), smart = Inkling (harder reasoning), draft = speculative-decoding head for the smart model.",
+  "models": [
+    {
+      "name": "ornith",
+      "role": "fast",
+      "file": "Ornith-1.5-35B-A3B.APEX-I-MiniPlus-V2.1.gguf",
+      "url": "https://huggingface.co/IsValorum/Ornith-1.5-35B-A3B-APEX-I-MiniPlus-V2.1-GGUF/resolve/main/Ornith-1.5-35B-A3B.APEX-I-MiniPlus-V2.1.gguf",
+      "size": 15230814848
+    },
+    {
+      "name": "inkling",
+      "role": "smart",
+      "file": "Inkling-2-Mini-APEX-I-MiniPlus-V2.1.gguf",
+      "url": "https://huggingface.co/IsValorum/Inkling-2-Mini-APEX-I-MiniPlus-V2.1-GGUF/resolve/main/Inkling-2-Mini-APEX-I-MiniPlus-V2.1.gguf",
+      "size": 12977516064
+    }
+  ]
+}
