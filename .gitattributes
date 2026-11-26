@@ -1,0 +1,3 @@
+*.diff -text
+*.patch -text
+*.sh text eol=lf
