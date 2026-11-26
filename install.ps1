@@ -48,7 +48,7 @@ $py = $null
 foreach ($c in @("python", "py")) {
   if (Have $c) {
     $v = & $c -c "import sys; print('%d.%d' % sys.version_info[:2])" 2>$null
-    if ($v -and [version]$v -ge [version]"3.11") { $py = (Get-Command $c).Source; break }
+    if ($v -and [version]$v -ge [version]"3.11") { $py = (& $c -c "import sys; print(sys.executable)").Trim(); break }
   }
 }
 if (-not $py) {
