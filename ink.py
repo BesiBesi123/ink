@@ -88,9 +88,15 @@ _EXE_NAME = "llama-server.exe" if os.name == "nt" else "llama-server"
 LLAMA_DIR = Path(_cfg("llama_dir", str(Path.home() / ".ink" / "bin" / "llama")))   # install.ps1 puts ink's build here
 MODELS_DIR = Path(_cfg("models_dir", str(Path.home() / ".ink" / "models")))
 _HERMES = Path.home() / "AppData" / "Local" / "hermes"
+# ink's own llama.cpp build (install.ps1 / github release) carries the #32910 fix: op offload of host experts works,
+# measured 2026-11-27 with Inkling MiniPlus: 334 read / 30.3 write tok/s (-ub 512) vs 189 / 30.3 without offload and
+# 139-145 / 27.5 on stock b12728. Stock builds keep the CPU-prefill workaround.
+_INK_BUILD = (LLAMA_DIR / "BUILD.txt").is_file() and "32910" in (LLAMA_DIR / "BUILD.txt").read_text("utf-8", "replace")
 LLAMA_EXE = _first(LLAMA_DIR / _EXE_NAME, TUNE / "llamacpp-b12728" / "bin" / _EXE_NAME)
 HERMES_EXE = _cfg("fast_exe", _first(LLAMA_DIR / _EXE_NAME, _HERMES / "tools" / "llamacpp-cuda-11671-win32-x64" / _EXE_NAME))
 OFFICIAL_EXE = _cfg("smart_exe", LLAMA_EXE)
+SMART_BATCH_ARGS = (["-ub", str(_cfg("smart_ubatch", 512))] if (_INK_BUILD and Path(OFFICIAL_EXE).parent == LLAMA_DIR)
+                    else ["-ub", str(_cfg("smart_ubatch", 256)), "--no-op-offload"])
 
 # context caps: prefill dominates latency here (~77 tok/s for Inkling), so every tool-result token costs ~13 ms
 READ_LINES = int(_cfg("read_lines", 150))
@@ -143,7 +149,7 @@ PROFILES = {
         # Tried and rejected: IQ3_XXS core (27 tok/s but failed eval problems), DSpark drafter (no gain: 19.0 vs 19.0).
         # --ctx-checkpoints 4: each SWA checkpoint is ~88MB of RAM (and disk in saved sessions); the default kept 26
         # in one short session (2.3GB). An append-only agent only ever rolls back to the last message or two.
-        args=["--alias", "inkling-local", "--ctx-checkpoints", "4", "-t", "8", "-tb", "16", "-b", "2048", "-ub", str(_cfg("smart_ubatch", 256)), "--no-op-offload",
+        args=["--alias", "inkling-local", "--ctx-checkpoints", "4", "-t", "8", "-tb", "16", "-b", "2048", *SMART_BATCH_ARGS,
               # No n-gram speculation: +46% on a temp-0 copy benchmark, but in real agent runs at temp 1.0 only
               # 20% of drafts were accepted (they fire during reasoning, not just copying) -> 10.8 vs 12.8 tok/s.
               "--temp", "1.0", "--top-p", "1.0", "--top-k", "0", "--min-p", "0"],
@@ -154,7 +160,7 @@ PROFILES = {
         fits=[([], 32768, r"6-17"), ([], 32768, r"6-15"), ([], 32768, r"6-13"), ([], 32768, r"6-11"),
               (["-nkvo"], None, r"6-17"), (["-nkvo"], None, r"6-14"), (["-nkvo"], None, r"6-13"), (["-nkvo"], None, r"6-11")]),
     "fast": dict(
-        title="Ornith 35B MiniPlus", port=18600, ctx=int(_cfg("fast_ctx", 249856)), exe=HERMES_EXE, effort=str(_cfg("fast_effort", "high")),
+        title="Ornith 35B MiniPlus", port=18600, ctx=int(_cfg("fast_ctx", 131072)), exe=HERMES_EXE, effort=str(_cfg("fast_effort", "high")),
         model=_cfg("fast_model", _first(MODELS_DIR / "Ornith-1.5-35B-A3B.APEX-I-MiniPlus-V2.1.gguf",
                                          _HERMES / "models" / "Ornith-1.5-35B-A3B.APEX-I-MiniPlus-V2.1.gguf")),
         # measured on this box at 128k: ~1,186 tok/s prefill, ~36 tok/s gen (ncmoe33-ub4k), 16/20 on the coding eval
@@ -1107,7 +1113,7 @@ KV_BUDGET = float(_cfg("kv_budget_gb", 12)) * 1e9  # saved session KV caches kep
 KV_MAX_DAYS = float(_cfg("kv_max_days", 3))
 # seconds a full re-read may take before ink compacts first (switching model/effort/mode re-reads everything)
 REREAD_MAX_S = float(_cfg("reread_max_seconds", 180))
-PREFILL_TPS = {"smart": float(_cfg("smart_prefill_tps", 140)), "fast": float(_cfg("fast_prefill_tps", 1100))}
+PREFILL_TPS = {"smart": float(_cfg("smart_prefill_tps", 330 if "--no-op-offload" not in SMART_BATCH_ARGS else 140)), "fast": float(_cfg("fast_prefill_tps", 1100))}
 
 def prune_kv():
     """Saved conversation caches are ~17 KB/token and don't compress (measured: zstd saves 4%), so keep only the
@@ -2540,8 +2546,24 @@ class Agent:
                 p, old, new = self.tools.line_edit(args.get("path", ""), args["lines"], args.get("new_string", ""))
             else:
                 if not args.get("old_string"):
-                    raise ToolError("give `find` (the exact text to replace) or `lines` (e.g. \"40-52\")")
-                p, old, new = self.tools.edit_preview(args.get("path", ""), args.get("old_string", ""),
+                    # INK-track O22: Ornith sends file+replace with the whole new content and no find, then repeats
+                    # the same call on every error. If the replacement is clearly the whole file, do what it means.
+                    fp = self.tools.path(args.get("path", ""))
+                    cur = fp.read_text("utf-8", "replace") if fp.is_file() else ""
+                    new_txt = args.get("new_string", "")
+                    if fp.is_file() and new_txt and (len(cur.splitlines()) <= 20 or len(new_txt) >= 0.5 * len(cur)):
+                        p, old, new = self.tools.write_preview(args.get("path", ""), new_txt)
+                        args["content"] = new_txt
+                    else:
+                        n = len(cur.splitlines())
+                        raise ToolError(
+                            "edit_file needs `find` (the exact current text) or `lines`. Example that replaces lines "
+                            f"1-3 of this file ({n} lines): " + json.dumps({"file": args.get("path", ""), "lines": "1-3",
+                            "replace": "<new text for those lines>"}) + " - or use write_file with the whole file.")
+                else:
+                    p = None
+                if p is None:
+                    p, old, new = self.tools.edit_preview(args.get("path", ""), args.get("old_string", ""),
                                                       args.get("new_string", ""), bool(args.get("replace_all")))
         else:
             p, old, new = self.tools.write_preview(args.get("path", ""), args.get("content", ""))

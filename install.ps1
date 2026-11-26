@@ -10,7 +10,8 @@
 param(
   [ValidateSet("all", "fast", "smart", "none")] [string]$Models = "all",
   [string]$Repo = "BesiBesi123/ink",
-  [switch]$Yes
+  [switch]$Yes,
+  [switch]$NoPath
 )
 $ErrorActionPreference = "Stop"
 $App = $PSScriptRoot
@@ -140,7 +141,7 @@ node "$App\tui\ink-tui.mjs" %*
 "@
 Set-Content -Path (Join-Path $Bin "ink.cmd") -Value $launcher -Encoding ascii
 $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
-if (($userPath -split ";") -notcontains $Bin) {
+if (-not $NoPath -and ($userPath -split ";") -notcontains $Bin) {
   [Environment]::SetEnvironmentVariable("Path", "$userPath;$Bin", "User")
   Say "added $Bin to your PATH (open a new terminal)"
 }

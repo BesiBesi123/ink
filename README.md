@@ -4,8 +4,13 @@ A local coding agent for your terminal that runs entirely on your own PC - built
 (developed on an **RTX 4060 8 GB + 32 GB RAM**). No cloud, no API keys, no Claude/OpenAI: two open models on a
 patched llama.cpp, wrapped in a harness that does the hard parts a small model can't do alone.
 
-- **Ornith 1.5 35B-A3B** (fast, default) - reads ~1,100 tok/s, writes ~35 tok/s on an 8 GB card
-- **Inkling 2 Mini** (smart) - for harder reasoning; `/smart` and `/fast` switch, the conversation is kept
+| Model (on an RTX 4060 8 GB, Ryzen 7 5700X3D, 32 GB DDR4) | Role | Reads | Writes | Context |
+|---|---|---|---|---|
+| **Ornith 1.5 35B-A3B** APEX-I MiniPlus | fast, default | ~1,240 tok/s | ~36 tok/s | 128k |
+| **Inkling 2 Mini** APEX-I MiniPlus | smart | ~330 tok/s | ~30 tok/s | 32k |
+
+`/smart` and `/fast` switch models; the conversation is kept. Inkling's reading speed comes from ink's llama.cpp
+patch (it was ~45-75 tok/s on stock llama.cpp with partial GPU offload).
 
 ## Install (Windows + NVIDIA)
 
@@ -19,9 +24,9 @@ The installer checks your GPU, RAM, Python 3.11+ and Node 20+ (offers to install
 
 | What | Where | Size |
 |---|---|---|
-| ink's llama.cpp build (upstream + patches, CUDA 12.4) | `~/.ink/bin/llama` | ~0.7 GB |
+| ink's llama.cpp build (upstream + patches, CUDA 12.4) | `~/.ink/bin/llama` | ~0.6 GB |
 | Ornith 1.5 35B-A3B APEX-I MiniPlus (fast model) | `~/.ink/models` | 15.2 GB |
-| Inkling 2 Mini (smart model) | `~/.ink/models` | see `models.json` |
+| Inkling 2 Mini APEX-I MiniPlus (smart model) | `~/.ink/models` | 13.0 GB |
 | terminal UI packages | `tui/node_modules` | small |
 
 and puts an `ink` command on your PATH. Downloads resume if interrupted - just run the installer again.
